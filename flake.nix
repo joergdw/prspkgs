@@ -1,15 +1,25 @@
 {
-  description = "A very basic flake";
+	description = "Personal collection of Nix-packages for open-source-software";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-  };
+	inputs = {
+		flake-utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, nixpkgs }: {
+		nixpkgs-stable.url = "github:nixos/nixpkgs?ref=nixos-25.11";
+		nixpkgs-unstable.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+	};
 
-    packages.x86_64-linux.hello = nixpkgs.legacyPackages.x86_64-linux.hello;
-
-    packages.x86_64-linux.default = self.packages.x86_64-linux.hello;
-
-  };
+	outputs = { self, flake-utils, nixpkgs-stable, nixpkgs-unstable }@inputs:
+		let supportedSystems = flake-utils.lib.defaultSystems;
+		in flake-utils.lib.eachSystem supportedSystems (system:
+			let
+				nixpkgs = import nixpkgs-stable {
+					inherit system;
+				};
+				lib = nixpkgs.lib;
+				callPackage = lib.customisation.callPackageWith nixpkgs;
+			in {
+				packages = {
+					cloud-mta-build-tool = callPackage ./packages/cloud-mta-build-tool {};
+				};
+			});
 }
